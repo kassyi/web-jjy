@@ -12,11 +12,7 @@
 
     // うるう秒 +1:一ヶ月以内に挿入 -1:一ヶ月以内に削除
     function getleapsecond() {
-<<<<<<< HEAD
         var now = JST.getTime();
-=======
-        var now = Date.now();
->>>>>>> 8558ddb8982bd791b53631a3eca117ab96f331e8
         for(var i = 0; i < plus_leapsecond_list.length; i++) {
             var diff = plus_leapsecond_list[i] - now;
             if (diff > 0 && diff <= 31*24*60*60*1000) {
