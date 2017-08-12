@@ -221,8 +221,6 @@
     });
 
     var nowtime = document.getElementById('time');
-    var w = canvas.width;
-    var h = canvas.height;
 
     function renderBody() {
         nowtime.innerText = JST.toString();
