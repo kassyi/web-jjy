@@ -1,20 +1,39 @@
-(function() {
+
     var freq = 13333;
     var ctx;
     var signal;
 
     var AudioContext = window.AudioContext || window.webkitAudioContext;
 
+    // うるう秒挿入日一覧(日本時)
+    var plus_leapsecond_list = [
+        new Date(2017, 0, 1, 9)
+    ];
+
+    // うるう秒 +1:一ヶ月以内に挿入 -1:一ヶ月以内に削除
+    function getleapsecond() {
+        var now = JST.getTime();
+        for(var i = 0; i < plus_leapsecond_list.length; i++) {
+            var diff = plus_leapsecond_list[i] - now;
+            if (diff > 0 && diff <= 31*24*60*60*1000) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     function schedule(date) {
-        var now = Date.now();
+        var now = JST.getTime();
         var start = date.getTime();
         var offset = (start - now) / 1000 + ctx.currentTime;
         var minute = date.getMinutes();
         var hour = date.getHours();
-        var year = date.getFullYear() % 100;
+        var fullyear = date.getFullYear();
+        var year = fullyear % 100;
         var week_day = date.getDay();
         var year_day = (new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() - new Date(date.getFullYear(), 0, 1).getTime()) / (24*60*60*1000) + 1;
         var array = [];
+        var leapsecond = getleapsecond();
 
         // 毎分s秒の位置のマーカーを出力する
         function marker(s) {
@@ -125,8 +144,19 @@
         week_day = bit(52, week_day, 1);
 
         // うるう秒
-        bit(53, 0, 1); // 0
-        bit(54, 0, 1); // 0
+        if (leapsecond === 0) {
+            // うるう秒なし
+            bit(53, 0, 1); // 0
+            bit(54, 0, 1); // 0
+        } else if (leapsecond > 0) {
+            // 正のうるう秒
+            bit(53, 1, 1); // 1
+            bit(54, 1, 1); // 1
+        } else {
+            // 負のうるう秒
+            bit(53, 1, 1); // 1
+            bit(54, 0, 1); // 0
+        }
 
         bit(55, 0, 1); // 0
         bit(56, 0, 1); // 0
@@ -142,7 +172,7 @@
 
     function start() {
         ctx = new AudioContext();
-        var now = Date.now();
+        var now = JST.getTime();
         var t = Math.floor(now / (60 * 1000)) * 60 * 1000;
         var next = t + 60 * 1000;
         var delay = next - now - 1000; // 毎分0秒ピッタリの少し前にタイマーをセットする
@@ -191,36 +221,19 @@
     });
 
     var nowtime = document.getElementById('time');
-    var canvas = document.getElementById('canvas');
-    var ctx2d = canvas.getContext('2d');
     var w = canvas.width;
     var h = canvas.height;
 
-    render();
-    function render() {
-        nowtime.innerText = new Date().toString();
+    function renderBody() {
+        nowtime.innerText = JST.toString();
 
         var i;
-        ctx2d.clearRect(0, 0, w, h);
         if (!signal) {
-            requestAnimationFrame(render);
+            requestAnimationFrame(renderBody);
             return;
         }
-        var now = Math.floor(Date.now() / 1000) % 60;
+        var now = Math.floor(JST.getTime() / 1000) % 60;
 
-        for (i = 0; i < signal.length; i++) {
-            if (i == now) {
-                if (signal[i] < 0.3) ctx2d.fillStyle = "#FF0000";
-                else if (signal[i] < 0.7) ctx2d.fillStyle = "#FFFF00";
-                else ctx2d.fillStyle = "#00FF00";
-            } else {
-                if (signal[i] < 0.3) ctx2d.fillStyle = "#7F0000";
-                else if (signal[i] < 0.7) ctx2d.fillStyle = "#7F7F00";
-                else ctx2d.fillStyle = "#007F00";
-            }
-            ctx2d.fillRect((i%30)*30, Math.floor(i/30)*100, 30 * signal[i], 80);
-        }
-        requestAnimationFrame(render);
+        requestAnimationFrame(renderBody);
     }
-
-})();
+    
